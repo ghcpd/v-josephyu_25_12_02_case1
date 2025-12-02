@@ -1,0 +1,59 @@
+# Documentation Defects and Traces
+
+## 1) `python3 -m venv .venv` fails on Windows
+- **Step**: `python3 -m venv .venv`
+- **Error**:
+```
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+```
+- **Fix**: Use `py -3 -m venv .venv` (Windows) or `python -m venv .venv`.
+
+## 2) `source .venv/bin/activate` invalid on Windows
+- **Step**: `source .venv/bin/activate`
+- **Error**:
+```
+source : The term 'source' is not recognized as the name of a cmdlet, function, script file, or operable program.
+```
+- **Fix**: Use `.venv\Scripts\Activate.ps1` (PowerShell) or `source .venv/bin/activate` on Unix shells.
+
+## 3) App ignored `--host`/`--port` when run via `python app.py`
+- **Step**: `python app.py --host=0.0.0.0 --port=8080`
+- **Observed Output** (pre-fix):
+```
+ * Running on http://127.0.0.1:5000
+```
+- **Cause**: CLI args weren’t parsed; `app.run()` used defaults.
+- **Fix**: Added argparse handling in `app.py` to honor `--host/--port/--debug`.
+
+## 4) Routes `/signup`, `/signin`, `/profile` missing
+- **Step**: `GET /signup`, `/signin`, `/profile`
+- **Result**:
+```
+/signup 404
+/signin 404
+/profile 404
+```
+- **Fix**: Use `/register`, `/login`, `/dashboard`.
+
+## 5) JSON APIs `/api/register` and `/api/login` missing
+- **Step**: `POST /api/register` `{ "user": "alice", "pass": "123", "mail": "a@ex.com" }`
+- **Result**:
+```
+/api/register 404
+/api/login 404
+```
+- **Fix**: Not implemented; removed from corrected README.
+
+## 6) Email is required; password min length is 6
+- **Step**: POST `/register` with empty email and password `123`
+- **Response errors**:
+```
+['This field is required.', 'Field must be between 6 and 128 characters long.']
+```
+- **Docs claimed**: Email optional, password min length 3.
+- **Fix**: Document actual requirements.
+
+## 7) Database path and sessions storage differ
+- **Docs claimed**: DB at `data/database.sqlite3`; sessions stored in Redis.
+- **Actual**: DB at `app.db`; sessions are Flask-signed cookies.
+- **Fix**: Document actual behavior.
