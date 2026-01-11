@@ -1,0 +1,328 @@
+# DEFECTS FOUND IN README.md
+
+This document lists all discrepancies between the README.md documentation and the actual implementation.
+
+================================================================================
+DEFECT #1: Command-line arguments not supported
+================================================================================
+Location: README.md "Quick Start" section
+Documentation states:
+  ```bash
+  python app.py --host=0.0.0.0 --port=8080
+  ```
+
+Actual behavior:
+  - app.py does not parse command-line arguments
+  - app.run(debug=True) uses default host=127.0.0.1 and port=5000
+  - Command-line flags are ignored
+
+Reproduction:
+  1. Run: python app.py --host=0.0.0.0 --port=8080
+  2. Observe: Server starts on http://127.0.0.1:5000 (not 0.0.0.0:8080)
+
+Error trace:
+  No error - arguments are silently ignored by Flask app.run()
+
+Fix required:
+  Parse command-line arguments using argparse or click, or document correct usage
+
+
+================================================================================
+DEFECT #2: Route mismatch - /signup vs /register
+================================================================================
+Location: README.md "Tutorial: Register and Login" section
+Documentation states:
+  "Register a user at `/signup`"
+
+Actual implementation:
+  - Route is `/register` (auth.py line 33)
+  - @auth_bp.route('/register', methods=['GET', 'POST'])
+
+Reproduction:
+  1. Navigate to http://localhost:5000/signup
+  2. Get: 404 Not Found error
+
+Error trace:
+  404 Not Found
+  The requested URL was not found on the server.
+
+Fix required:
+  Change documentation to `/register` OR add route alias for `/signup`
+
+
+================================================================================
+DEFECT #3: Route mismatch - /signin vs /login
+================================================================================
+Location: README.md "Tutorial: Register and Login" section
+Documentation states:
+  "Then login at `/signin`"
+
+Actual implementation:
+  - Route is `/login` (auth.py line 20)
+  - @auth_bp.route('/login', methods=['GET', 'POST'])
+
+Reproduction:
+  1. Navigate to http://localhost:5000/signin
+  2. Get: 404 Not Found error
+
+Error trace:
+  404 Not Found
+  The requested URL was not found on the server.
+
+Fix required:
+  Change documentation to `/login` OR add route alias for `/signin`
+
+
+================================================================================
+DEFECT #4: Route mismatch - /profile vs /dashboard
+================================================================================
+Location: README.md "Tutorial: Register and Login" section
+Documentation states:
+  "Access the user profile at `/profile`"
+
+Actual implementation:
+  - Route is `/dashboard` (app.py line 26)
+  - @app.route('/dashboard')
+
+Reproduction:
+  1. Login and navigate to http://localhost:5000/profile
+  2. Get: 404 Not Found error
+
+Error trace:
+  404 Not Found
+  The requested URL was not found on the server.
+
+Fix required:
+  Change documentation to `/dashboard` OR add route alias for `/profile`
+
+
+================================================================================
+DEFECT #5: Missing confirm_password field
+================================================================================
+Location: README.md "Tutorial: Register and Login" section
+Documentation states:
+  "Register a user at /signup with fields: username, email, password, confirm_password"
+
+Actual implementation:
+  - RegisterForm only has: username, email, password, submit (auth.py lines 13-17)
+  - No confirm_password field or validation
+
+Reproduction:
+  1. Inspect registration form in browser
+  2. Observe: Only 3 input fields (username, email, password)
+
+Error trace:
+  N/A - Field simply doesn't exist
+
+Fix required:
+  Add confirm_password field to RegisterForm or remove from documentation
+
+
+================================================================================
+DEFECT #6: API endpoints do not exist
+================================================================================
+Location: README.md "API Reference" section
+Documentation states:
+  - POST `/api/register`
+  - POST `/api/login`
+
+Actual implementation:
+  - No /api/register endpoint exists in codebase
+  - No /api/login endpoint exists in codebase
+  - Only web form routes exist
+
+Reproduction:
+  1. POST to http://localhost:5000/api/register
+  2. Get: 404 Not Found error
+
+Error trace:
+  404 Not Found
+  The requested URL was not found on the server.
+
+Fix required:
+  Implement API endpoints OR remove from documentation
+
+
+================================================================================
+DEFECT #7: Wrong field names in API documentation
+================================================================================
+Location: README.md "API Reference" section
+Documentation states:
+  - Request body: { "user": "name", "pass": "123", "mail": "email@example.com" }
+  - Field names: user, pass, mail
+
+Actual implementation:
+  - Form fields use: username, password, email
+  - Database columns use: username, password_hash, email
+
+Reproduction:
+  N/A - API endpoints don't exist (see Defect #6)
+
+Error trace:
+  N/A - Would fail validation if endpoints existed
+
+Fix required:
+  Use correct field names (username, password, email) in documentation
+
+
+================================================================================
+DEFECT #8: Password length requirement mismatch
+================================================================================
+Location: README.md "Notes" section
+Documentation states:
+  "Password minimum length is 3"
+
+Actual implementation:
+  - LoginForm: Length(min=6, max=128) (auth.py line 10)
+  - RegisterForm: Length(min=6, max=128) (auth.py line 16)
+  - Minimum is 6, not 3
+
+Reproduction:
+  1. Try to register with password "abc" (3 chars)
+  2. Get validation error: "Field must be at least 6 characters long"
+
+Error trace:
+  Form validation error:
+  wtforms.validators.ValidationError: Field must be at least 6 characters long.
+
+Fix required:
+  Change documentation to "minimum length is 6" OR change code to min=3
+
+
+================================================================================
+DEFECT #9: Email is required, not optional
+================================================================================
+Location: README.md "Notes" section
+Documentation states:
+  "Email is optional"
+
+Actual implementation:
+  - Database: email TEXT UNIQUE NOT NULL (models.py line 57)
+  - Form: validators=[DataRequired(), Email()] (auth.py line 15)
+  - Email is required
+
+Reproduction:
+  1. Try to register without email
+  2. Get validation error: "This field is required"
+  3. Database constraint prevents NULL values
+
+Error trace:
+  Form validation: "This field is required"
+  Database error (if bypassed): sqlite3.IntegrityError: NOT NULL constraint failed: users.email
+
+Fix required:
+  Change documentation to "Email is required" OR make email optional in code
+
+
+================================================================================
+DEFECT #10: Database location mismatch
+================================================================================
+Location: README.md "Notes" section
+Documentation states:
+  "The database file is `data/database.sqlite3`"
+
+Actual implementation:
+  - app.config['DATABASE'] = 'app.db' (app.py line 9)
+  - Database is created at workspace root as app.db
+  - Not in data/ subdirectory
+
+Reproduction:
+  1. Run application
+  2. Check filesystem: app.db exists at root
+  3. No data/ directory is created
+
+Error trace:
+  N/A - Works but in wrong location
+
+Fix required:
+  Change documentation to "app.db" OR change code to use data/database.sqlite3
+
+
+================================================================================
+DEFECT #11: Redis sessions not implemented
+================================================================================
+Location: README.md "Notes" section
+Documentation states:
+  "Sessions are stored server-side in Redis"
+
+Actual implementation:
+  - No Redis configuration in code
+  - No Flask-Session or redis imports
+  - Uses default Flask client-side cookie sessions
+
+Reproduction:
+  1. Login to application
+  2. Check dependencies: no redis or flask-session
+  3. Session stored in encrypted client cookie, not Redis
+
+Error trace:
+  N/A - Default sessions work but aren't Redis
+
+Fix required:
+  Remove Redis mention from documentation OR implement Redis sessions
+
+
+================================================================================
+DEFECT #12: FLASK_SECRET environment variable not used
+================================================================================
+Location: README.md "Tutorial: Register and Login" section
+Documentation states:
+  "Use environment variable `FLASK_SECRET` to configure CSRF"
+
+Actual implementation:
+  - app.config['SECRET_KEY'] = 'replace-with-a-strong-secret-key' (app.py line 8)
+  - Hardcoded secret key
+  - No environment variable usage
+
+Reproduction:
+  1. Set environment variable: $env:FLASK_SECRET="mysecret"
+  2. Run application
+  3. Observe: Hardcoded key is used, not environment variable
+
+Error trace:
+  N/A - Works but doesn't respect environment variable
+
+Fix required:
+  Change code to: app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET', 'default-key')
+  OR remove environment variable mention from documentation
+
+
+================================================================================
+DEFECT #13: run_tests.sh does not exist
+================================================================================
+Location: README.md "Notes" section
+Documentation states:
+  "To run tests: `bash run_tests.sh`"
+
+Actual implementation:
+  - No run_tests.sh file exists in workspace
+  - No run_tests.ps1 for Windows
+  - No test files exist
+
+Reproduction:
+  1. Run: bash run_tests.sh
+  2. Get: bash: run_tests.sh: No such file or directory
+
+Error trace:
+  bash: run_tests.sh: No such file or directory
+
+Fix required:
+  Create run_tests.sh and run_tests.ps1 scripts with test suite
+
+
+================================================================================
+SUMMARY
+================================================================================
+Total defects found: 13
+
+Categories:
+- Route mismatches: 4 (defects #2, #3, #4, #6)
+- Configuration mismatches: 3 (defects #1, #10, #12)
+- Validation/requirements mismatches: 3 (defects #5, #8, #9)
+- Missing features: 2 (defects #6, #13)
+- False documentation: 1 (defect #11)
+
+Severity:
+- Critical (prevents documented usage): 7 (defects #1, #2, #3, #4, #6, #13)
+- High (misleading information): 4 (defects #5, #8, #9, #12)
+- Medium (incorrect details): 2 (defects #10, #11)
