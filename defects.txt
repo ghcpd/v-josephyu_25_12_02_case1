@@ -1,0 +1,60 @@
+# Defects
+
+1) Activation command (PowerShell)
+- **Doc**: `source .venv/bin/activate`
+- **Issue**: Fails on Windows PowerShell
+- **Repro**:
+```
+cd "D:\mins_project\model_test\Documentation & knowledge\1202\oswe-large-rapd-m4s90"; source .venv/bin/activate
+source : The term 'source' is not recognized as the name of a cmdlet, function, script file, or operable program.
+```
+
+2) Quick start host/port ignored
+- **Doc**: `python app.py --host=0.0.0.0 --port=8080`
+- **Issue**: Arguments ignored; server binds 127.0.0.1:5000
+- **Repro**:
+```
+ * Running on http://127.0.0.1:5000
+```
+
+3) Routes mismatch (/signup, /signin, /profile)
+- **Doc**: `/signup`, `/signin`, `/profile`
+- **Issue**: Not implemented; return 404
+- **Repro (test client)**:
+```
+{'/signup': 404, '/signin': 404, '/profile': 404}
+```
+
+4) API endpoints missing
+- **Doc**: POST `/api/register`, `/api/login`
+- **Issue**: Not implemented; return 404
+- **Repro (test client)**:
+```
+{'/api/register': 404, '/api/login': 404}
+```
+
+5) Field and validation mismatch
+- **Doc**: Register fields `username`, `email` (optional), `password`, `confirm_password`; password min length 3
+- **Issue**: Actual form fields: `username`, `email` (required), `password`; password min length 6; `confirm_password` absent
+- **Repro (test client)**:
+```
+resp = client.post('/register', data={'username':'bob','email':'','password':'12345','csrf_token': csrf}, follow_redirects=True)
+status=200; body contains 'This field is required' and 'Field must be between 6 and 128 characters long'
+```
+
+6) Database path mismatch
+- **Doc**: `data/database.sqlite3`
+- **Issue**: App uses `app.config['DATABASE'] = 'app.db'` (project root)
+
+7) Sessions backend mismatch
+- **Doc**: Sessions stored server-side in Redis
+- **Issue**: No Redis dependency; Flask signed cookie sessions used
+
+8) CSRF configuration mismatch
+- **Doc**: Use env `FLASK_SECRET`
+- **Issue**: App uses hard-coded `SECRET_KEY`; env var ignored
+- **Repro**:
+```
+from app import app
+print(app.config['SECRET_KEY'])  # 'replace-with-a-strong-secret-key'
+```
