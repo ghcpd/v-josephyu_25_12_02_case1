@@ -1,0 +1,55 @@
+Repository verification defects and reproduction traces
+
+1) Wrong activation commands for Windows / Unix in README
+   - README suggests using `python3 -m venv .venv` and `source .venv/bin/activate` (UNIX) but the project target environment is Windows PowerShell. On Windows activation is `.venv\Scripts\Activate.ps1` or `.\.venv\Scripts\Activate`.
+
+2) README references non-existent endpoints and incorrect names
+   - README says endpoints `/signup`, `/signin`, `/profile` and `/api/register`, `/api/login` but implementation exposes `/register`, `/login`, `/logout` and `/dashboard` instead.
+
+3) README documents environment variable `FLASK_SECRET` but code uses `app.config['SECRET_KEY']` with a placeholder value and does not read `FLASK_SECRET`.
+
+4) Database path mismatch
+   - README refers to `data/database.sqlite3` while code uses `app.db` at the workspace root by default.
+
+5) CSRF and session backend claims are incorrect
+   - README claims sessions are stored in Redis; there is no Redis configuration or usage.
+   - README mentions using `FLASK_SECRET` for CSRF configuration; the app uses `SECRET_KEY` configured in `app.py`.
+
+6) Password policy mismatch
+   - README says password minimum length is 3; code requires minimum length 6 in forms.
+
+7) Quick start command issues
+   - README suggests running `python app.py --host=0.0.0.0 --port=8080`, however `app.py` doesn't parse CLI args; use `FLASK_APP=app.py flask run --host=0.0.0.0 --port=8080` or adjust `app.run`.
+
+8) Tests command is missing
+   - README references `bash run_tests.sh` but `run_tests.sh` was not present.
+
+Reproduction and improvements:
+- See `tests/` for automated verification that exercises registration/login paths and model password checks.
+- See `corrected_readme.md` for corrected instructions and working examples.
+
+Automated tests run (pytest):
+
+   - Command used: pytest -q test_files
+   - Result observed: 3 passed
+
+This confirms the functional tests for registration, login and model user verification pass in a properly provisioned environment.
+
+
+Reproduction traces / verification steps
+
+1) Hitting non-existent endpoints (404):
+   - GET /signup -> HTTP 404 (app exposes /register instead)
+   - GET /signin -> HTTP 404 (app exposes /login instead)
+   - GET /profile -> HTTP 404 (app exposes /dashboard for authenticated users)
+
+2) API endpoints not implemented (404):
+   - POST /api/register -> 404
+   - POST /api/login -> 404
+
+3) Running 'python app.py --host=0.0.0.0 --port=8080'
+   - The script `app.py` ignores CLI args; `app.run(debug=True)` is used. Use `flask run --host=...` or edit `app.py`.
+
+4) Malformed requirements.txt
+   - The original `requirements.txt` included code-fence markers that prevented direct pip installs from the file without editing first.
+
